@@ -102,18 +102,9 @@ COMMON_ARGS=" \
 case $(uname -s) in
 Darwin*)
   OS_TYPE=darwin
-  LIB_NAME=libskia.a
-  case $(uname -m) in
-  x86_64*)
-    UNISON_LIB_NAME=libskia_darwin_amd64.a
-    export MACOSX_DEPLOYMENT_TARGET=10.14
-    ;;
-  arm*)
-    UNISON_LIB_NAME=libskia_darwin_arm64.a
-    export MACOSX_DEPLOYMENT_TARGET=11
-    ;;
-  esac
+  LIB_NAME=libskia.dylib
   PLATFORM_ARGS=" \
+      is_component_build=true \
       skia_enable_fontmgr_win=false \
       skia_use_fonthost_mac=true \
       skia_enable_fontmgr_fontconfig=false \
@@ -121,12 +112,15 @@ Darwin*)
       skia_use_freetype=false \
       skia_use_x11=false \
       extra_cflags=[ \
-        \"-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}\" \
+        \"-DSKIA_C_DLL\", \
+        \"-mmacosx-version-min=11\" \
       ] \
       extra_cflags_cc=[ \
+        \"-DSKIA_C_DLL\", \
         \"-DHAVE_XLOCALE_H\" \
       ] \
       extra_cflags_c=[ \
+        \"-DSKIA_C_DLL\", \
         \"-DHAVE_ARC4RANDOM_BUF\", \
         \"-stdlib=libc++\" \
       ] \
@@ -218,24 +212,20 @@ grep -v "/c/" gn/effects.gni >gn/effects.revised.gni
 mv gn/effects.revised.gni gn/effects.gni
 echo "int main() { return 0; }" >experimental/c-api-example/skia-c-example.c
 
-# Perform the build
-bin/gn gen "${BUILD_DIR}" --args="${COMMON_ARGS} ${PLATFORM_ARGS}"
-ninja -C "${BUILD_DIR}"
-
-# Copy the result into ${DIST}
+# copy the c header
 mkdir -p "${DIST}/include"
 /bin/rm -f ${DIST}/include/*.h
 cp include/sk_capi.h "${DIST}/include/"
-mkdir -p "${DIST}/lib/${OS_TYPE}"
-cp "${BUILD_DIR}/${LIB_NAME}" "${DIST}/lib/${OS_TYPE}/"
+
+# Perform the x86_64 build
+bin/gn gen build_x86_64 --args="${COMMON_ARGS} ${PLATFORM_ARGS} target_cpu=\"x86_64\""
+ninja -C build_x86_64
+
+# Perform the arm64 build
+bin/gn gen build_arm64 --args="${COMMON_ARGS} ${PLATFORM_ARGS} target_cpu=\"arm64\""
+ninja -C build_arm64
+
+# combine into fat multi-architecture lib and place in macos
+lipo build_arm64/"${LIB_NAME}" build_x86_64/"${LIB_NAME}" -output "${DIST}/${LIB_NAME}" -create
 
 cd ../..
-
-# If present, also copy the results into the unison build tree
-if [ -d ../unison ]; then
-  RELATIVE_UNISON_DIR=../unison/internal/skia
-  mkdir -p "${RELATIVE_UNISON_DIR}"
-  cp "${DIST}/include/sk_capi.h" "${RELATIVE_UNISON_DIR}/"
-  cp "${DIST}/lib/${OS_TYPE}/${LIB_NAME}" "${RELATIVE_UNISON_DIR}/${UNISON_LIB_NAME}"
-  echo "Copied distribution to unison"
-fi
