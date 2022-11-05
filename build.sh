@@ -51,6 +51,7 @@ fi
 
 BUILD_DIR=${PWD}/skia/build
 DIST=${PWD}/dist
+export MACOSX_DEPLOYMENT_TARGET=11
 
 # As changes to Skia are made, these args may need to be adjusted.
 # Use 'bin/gn args $BUILD_DIR --list' to see what args are available.
