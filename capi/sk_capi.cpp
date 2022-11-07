@@ -248,6 +248,15 @@ static_assert((int)SkPath::ArcSize::kLarge_ArcSize == (int)SK_PATH_ARC_SIZE_LARG
 static_assert((int)SkPathDirection::kCW  == (int)SK_PATH_DIRECTION_CW,  ASSERT_ENUM_MSG(SkPathDirection, sk_path_direction_t));
 static_assert((int)SkPathDirection::kCCW == (int)SK_PATH_DIRECTION_CCW, ASSERT_ENUM_MSG(SkPathDirection, sk_path_direction_t));
 
+// sk_path_verb_t
+static_assert((int)SkPathVerb::kMove   == (int)SK_PATH_VERB_MOVE, ASSERT_ENUM_MSG(SKPathVerb, sk_path_verb_t));
+static_assert((int)SkPathVerb::kLine   == (int)SK_PATH_VERB_LINE, ASSERT_ENUM_MSG(SKPathVerb, sk_path_verb_t));
+static_assert((int)SkPathVerb::kQuad   == (int)SK_PATH_VERB_QUAD, ASSERT_ENUM_MSG(SKPathVerb, sk_path_verb_t));
+static_assert((int)SkPathVerb::kConic  == (int)SK_PATH_VERB_CONIC, ASSERT_ENUM_MSG(SKPathVerb, sk_path_verb_t));
+static_assert((int)SkPathVerb::kCubic  == (int)SK_PATH_VERB_CUBIC, ASSERT_ENUM_MSG(SKPathVerb, sk_path_verb_t));
+static_assert((int)SkPathVerb::kClose  == (int)SK_PATH_VERB_CLOSE, ASSERT_ENUM_MSG(SKPathVerb, sk_path_verb_t));
+static_assert((int)SkPathVerb::kClose+1 == (int)SK_PATH_VERB_DONE, ASSERT_ENUM_MSG(SKPathVerb, sk_path_verb_t));
+
 // sk_path_effect_1d_style_t
 static_assert((int)SkPath1DPathEffect::Style::kTranslate_Style == (int)SK_PATH_EFFECT_1D_STYLE_TRANSLATE, ASSERT_ENUM_MSG(SkPath1DPathEffect::Style, sk_path_effect_1d_style_t));
 static_assert((int)SkPath1DPathEffect::Style::kRotate_Style    == (int)SK_PATH_EFFECT_1D_STYLE_ROTATE,    ASSERT_ENUM_MSG(SkPath1DPathEffect::Style, sk_path_effect_1d_style_t));
@@ -1112,6 +1121,14 @@ bool sk_path_contains (const sk_path_t* cpath, float x, float y) {
     return reinterpret_cast<const SkPath*>(cpath)->contains(x, y);
 }
 
+int sk_path_count_points(const sk_path_t* cpath) {
+    return reinterpret_cast<const SkPath*>(cpath)->countPoints();
+}
+
+int sk_path_count_verbs(const sk_path_t* cpath) {
+    return reinterpret_cast<const SkPath*>(cpath)->countVerbs();
+}
+
 void sk_path_cubic_to(sk_path_t* cpath, float x0, float y0, float x1, float y1, float x2, float y2) {
     reinterpret_cast<SkPath*>(cpath)->cubicTo(x0, y0, x1, y1, x2, y2);
 }
@@ -1123,6 +1140,19 @@ void sk_path_delete(sk_path_t* cpath) {
 void sk_path_get_bounds(const sk_path_t* cpath, sk_rect_t* crect) {
     SkRect r = reinterpret_cast<const SkPath*>(cpath)->getBounds();
     *crect = reinterpret_cast<sk_rect_t&>(r);
+}
+
+void sk_path_get_point(const sk_path_t* cpath, int index, sk_point_t* cpoint) {
+    SkPoint p = reinterpret_cast<const SkPath*>(cpath)->getPoint(index);
+    *cpoint = reinterpret_cast<sk_point_t&>(p);
+}
+
+int sk_path_get_points(sk_path_t* cpath, sk_point_t points[], int max) {
+    return reinterpret_cast<const SkPath*>(cpath)->getPoints(reinterpret_cast<SkPoint*>(points), max);
+}
+
+int sk_path_get_verbs(const sk_path_t* cpath, uint8_t verbs[], int max) {
+    return reinterpret_cast<const SkPath*>(cpath)->getVerbs(reinterpret_cast<uint8_t*>(verbs), max);
 }
 
 sk_path_fill_type_t sk_path_get_filltype(sk_path_t *cpath) {
@@ -1236,6 +1266,39 @@ sk_path_effect_t* sk_path_effect_create_trim(float start, float stop, sk_path_ef
 
 void sk_path_effect_unref(sk_path_effect_t* effect) {
     SkSafeUnref(reinterpret_cast<SkPathEffect*>(effect));
+}
+
+// ===== Functions from include/core/SkPath.h (SkPath::Iter) =====
+void sk_path_iter_delete(sk_path_iter_t* cpath_iter) {
+    delete reinterpret_cast<SkPath::Iter*>(cpath_iter);
+}
+
+bool sk_path_iter_is_close_line(const sk_path_iter_t* cpath_iter) {
+    return reinterpret_cast<const SkPath::Iter*>(cpath_iter)->isCloseLine();
+}
+
+bool sk_path_iter_is_closed_contour(const sk_path_iter_t* cpath_iter) {
+    return reinterpret_cast<const SkPath::Iter*>(cpath_iter)->isClosedContour();
+}
+
+float sk_path_iter_conic_weight(const sk_path_iter_t* cpath_iter) {
+    return reinterpret_cast<const SkPath::Iter*>(cpath_iter)->conicWeight();
+}
+
+sk_path_verb_t sk_path_iter_next(sk_path_iter_t* cpath_iter, sk_point_t* pts) {
+    return (sk_path_verb_t)reinterpret_cast<SkPath::Iter*>(cpath_iter)->next(reinterpret_cast<SkPoint*>(pts));
+}
+
+sk_path_iter_t* sk_path_iter_new(const sk_path_t* cpath, bool forceClose) {
+    if (cpath) {
+        return reinterpret_cast<sk_path_iter_t*>(new SkPath::Iter(*reinterpret_cast<const SkPath*>(cpath), forceClose));
+    } else {
+        return reinterpret_cast<sk_path_iter_t*>(new SkPath::Iter());
+    }
+}
+
+void sk_path_iter_set_path(sk_path_iter_t* cpath_iter, const sk_path_t* cpath, bool forceClose) {
+    reinterpret_cast<SkPath::Iter*>(cpath_iter)->setPath(*reinterpret_cast<const SkPath*>(cpath), forceClose);
 }
 
 // ===== Functions from include/pathops/SkPathOps.h =====

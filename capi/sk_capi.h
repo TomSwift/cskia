@@ -118,6 +118,7 @@ typedef enum {
 } sk_path_arc_size_t;
 
 typedef struct sk_path_t sk_path_t;
+typedef struct sk_path_iter_t sk_path_iter_t;
 
 // ===== Types from include/core/SkPathTypes.h =====
 
@@ -132,6 +133,16 @@ typedef enum {
     SK_PATH_FILLTYPE_INVERSE_WINDING, // Same as Winding, but draws outside of the path, rather than inside
     SK_PATH_FILLTYPE_INVERSE_EVENODD, // Same as EvenOdd, but draws outside of the path, rather than inside
 } sk_path_fill_type_t;
+
+typedef enum {
+    SK_PATH_VERB_MOVE,
+    SK_PATH_VERB_LINE,
+    SK_PATH_VERB_QUAD,
+    SK_PATH_VERB_CONIC,
+    SK_PATH_VERB_CUBIC,
+    SK_PATH_VERB_CLOSE,
+    SK_PATH_VERB_DONE,
+} sk_path_verb_t;
 
 // ===== Types from include/effects/Sk1DPathEffect.h =====
 
@@ -814,12 +825,17 @@ SK_C_API void sk_path_arc_to_with_oval(sk_path_t* cpath, const sk_rect_t* oval, 
 SK_C_API void sk_path_arc_to_with_points(sk_path_t* cpath, float x1, float y1, float x2, float y2, float radius);
 SK_C_API sk_path_t* sk_path_clone(const sk_path_t* cpath);
 SK_C_API void sk_path_close(sk_path_t* cpath);
+SK_C_API int sk_path_count_points(const sk_path_t* cpath);
+SK_C_API int sk_path_count_verbs(const sk_path_t* cpath);
 SK_C_API void sk_path_compute_tight_bounds(const sk_path_t* cpath, sk_rect_t* crect);
 SK_C_API void sk_path_conic_to(sk_path_t* cpath, float x0, float y0, float x1, float y1, float w);
 SK_C_API bool sk_path_contains (const sk_path_t* cpath, float x, float y);
 SK_C_API void sk_path_cubic_to(sk_path_t*, float x0, float y0, float x1, float y1, float x2, float y2);
 SK_C_API void sk_path_delete(sk_path_t* cpath);
 SK_C_API void sk_path_get_bounds(const sk_path_t* cpath, sk_rect_t* crect);
+SK_C_API void sk_path_get_point(const sk_path_t* cpath, int index, sk_point_t* point);
+SK_C_API int sk_path_get_points(const sk_path_t* cpath, sk_point_t points[], int max);
+SK_C_API int sk_path_get_verbs(const sk_path_t* cpath, uint8_t verbs[], int max);
 SK_C_API sk_path_fill_type_t sk_path_get_filltype(sk_path_t *cpath);
 SK_C_API bool sk_path_get_last_point(const sk_path_t* cpath, sk_point_t* point);
 SK_C_API void sk_path_line_to(sk_path_t *cpath, float x, float y);
@@ -838,6 +854,15 @@ SK_C_API void sk_path_set_filltype(sk_path_t* cpath, sk_path_fill_type_t cfillty
 SK_C_API void sk_path_to_svg_string(const sk_path_t* cpath, sk_string_t* str);
 SK_C_API void sk_path_transform(sk_path_t* cpath, const sk_matrix_t* cmatrix);
 SK_C_API void sk_path_transform_to_dest(const sk_path_t* cpath, const sk_matrix_t* cmatrix, sk_path_t* destination);
+
+// ===== Functions from include/core/SkPath.h (SkPath::Iter) =====
+SK_C_API void sk_path_iter_delete(sk_path_iter_t* cpath_iter);
+SK_C_API bool sk_path_iter_is_close_line(const sk_path_iter_t* cpath_iter);
+SK_C_API bool sk_path_iter_is_closed_contour(const sk_path_iter_t* cpath_iter);
+SK_C_API float sk_path_iter_conic_weight(const sk_path_iter_t* cpath_iter);
+SK_C_API sk_path_verb_t sk_path_iter_next(sk_path_iter_t* cpath_iter, sk_point_t* pts);
+SK_C_API sk_path_iter_t* sk_path_iter_new(const sk_path_t* cpath, bool forceClose);
+SK_C_API void sk_path_iter_set_path(sk_path_iter_t* cpath_iter, const sk_path_t* cpath, bool forceClose);
 
 // ===== Functions from include/core/SkPathEffect.h =====
 SK_C_API sk_path_effect_t* sk_path_effect_create_1d_path(const sk_path_t* path, float advance, float phase, sk_path_effect_1d_style_t style);
